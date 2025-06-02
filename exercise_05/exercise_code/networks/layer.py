@@ -19,8 +19,8 @@ class Sigmoid:
         # Implement the forward pass of Sigmoid activation function            #
         ########################################################################
 
-        pass
-
+        out = 1 / (1 + np.exp(-x))
+        cache = (x,out)
         ########################################################################
         #                           END OF YOUR CODE                           #
         ########################################################################
@@ -40,7 +40,9 @@ class Sigmoid:
         # Implement the backward pass of Sigmoid activation function           #
         ########################################################################
 
-        pass
+        (x,out) = cache
+        da_dx = (1-out)*out
+        dx = dout*da_dx
 
         ########################################################################
         #                           END OF YOUR CODE                           #
