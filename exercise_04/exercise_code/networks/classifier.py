@@ -106,10 +106,12 @@ class Classifier(Network):
         # layer.                                                               #
         ########################################################################
         X,z = self.cache
-        dz_dy = (1-z)*z
 
-        dL_dy = dout*dz_dy
-        dW = X.T.dot(dL_dy) #extract from the article dL/dw = dL/dy * W.T
+        #because this is simply how you calculate gradient of sigmoid w.r.t to output of model
+        da_dz = (1-z)*z # Actually this is dσ/dz = σ(z)(1 - σ(z))
+
+        dL_dz = dout*da_dz # Gradient of loss w.r.t. z (pre-activation)
+        dW = X.T.dot(dL_dz) # Gradient of loss w.r.t. weights
 
 
         ########################################################################
