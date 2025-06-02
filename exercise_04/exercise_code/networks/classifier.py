@@ -63,8 +63,10 @@ class Classifier(Network):
         #       The sigmoid is applied to the result of the affine step.       #
         ########################################################################
 
-
+        #Performing matrix multiplication of X and it's correponding weight 
         y = X @ self.W # or np.matmul(X, self.W)
+
+        #applies non-linearity
         z = self.sigmoid(y)
         self.cache = (X,z)
 
