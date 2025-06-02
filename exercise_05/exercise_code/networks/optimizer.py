@@ -124,8 +124,8 @@ class SGDMomentum(object):
         # value in the next_w variable. You should also use and update the     #
         # velocity v.                                                          #
         ########################################################################
-
-        pass
+        v = config['momentum']* v - lr*dw # update momentum
+        next_w = w + v
 
         ########################################################################
         #                           END OF YOUR CODE                           #
