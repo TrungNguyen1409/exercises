@@ -122,8 +122,8 @@ class LeakyRelu:
         # Implement the forward pass of LeakyRelu activation function          #
         ########################################################################
 
-        pass
-
+        outputs = np.where(x > 0, x, self.slope * x)
+        cache = x
         ########################################################################
         #                           END OF YOUR CODE                           #
         ########################################################################
@@ -139,8 +139,8 @@ class LeakyRelu:
         # Implement the backward pass of LeakyRelu activation function         #
         ########################################################################
 
-        pass
-
+        x = cache
+        dx = np.where(x > 0, 1, self.slope) * dout
         ########################################################################
         #                           END OF YOUR CODE                           #
         ########################################################################
@@ -165,8 +165,8 @@ class Tanh:
         # Implement the forward pass of Tanh activation function               #
         ########################################################################
 
-        pass
-
+        outputs = (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
+        cache = x
         ########################################################################
         #                           END OF YOUR CODE                           #
         ########################################################################
