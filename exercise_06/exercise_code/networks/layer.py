@@ -182,7 +182,7 @@ class Tanh:
         # Implement the backward pass of Tanh activation function              #
         ########################################################################
 
-        pass
+        dx = dout * (1 / cache ** 2)
 
         ########################################################################
         #                           END OF YOUR CODE                           #
