@@ -261,7 +261,7 @@ class RandomHorizontalFlip:
     Transform class that flips an image horizontically randomly with a given probability.
     """
 
-    def __init__(self, prob=0.5):
+    def __init__(self, prob=0.8):
         """
         :param prob: Probability of the image being flipped
         """
