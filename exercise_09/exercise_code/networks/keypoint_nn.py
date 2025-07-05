@@ -34,8 +34,37 @@ class KeypointModel(nn.Module):
         ########################################################################
         
 
-        pass
+        self.encoder = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=3, padding=1),   # (N, 32, 96, 96)
+            nn.ReLU(),
+            nn.MaxPool2d(2),                              # (N, 32, 48, 48)
+            
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),  # (N, 64, 48, 48)
+            nn.ReLU(),
+            nn.MaxPool2d(2),                              # (N, 64, 24, 24)
+            
+            nn.Conv2d(64, 128, kernel_size=3, padding=1), # (N, 128, 24, 24)
+            nn.ReLU(),
+            nn.MaxPool2d(2),                              # (N, 128, 12, 12)
+            
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),# (N, 256, 12, 12)
+            nn.ReLU(),
+            nn.MaxPool2d(2),                              # (N, 256, 6, 6)
+            
+            nn.Flatten(),                                 # (N, 256 * 6 * 6 = 9216)
+        )
 
+        self.decoder = nn.Sequential(
+            nn.Linear(256 * 6 * 6, hparams["n_hidden"]),
+            nn.ReLU(),
+            nn.Dropout(p=0.3),
+            
+            nn.Linear(hparams["n_hidden"], hparams["n_hidden"]),
+            nn.ReLU(),
+            nn.Dropout(p=0.3),
+            
+            nn.Linear(hparams["n_hidden"], 30),  # 15 (x, y) pairs
+        )
         ########################################################################
         #                           END OF YOUR CODE                           #
         ########################################################################
@@ -53,7 +82,8 @@ class KeypointModel(nn.Module):
         ########################################################################
 
 
-        pass
+        x = self.encoder(x)
+        x = self.decoder(x)
 
         ########################################################################
         #                           END OF YOUR CODE                           #
