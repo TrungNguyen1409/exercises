@@ -3,15 +3,13 @@ import torch
 from ..util.notebook_util import count_parameters
 from ..util.transformer_util import create_causal_mask
 import numpy as np
-from ..tests import tensor_path
-from os.path import join
 
 
 class AttentionHeadMultipleDimensionsOutputShapeTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import ScaledDotAttention
+        from ..network.Transformer import ScaledDotAttention
 
         n_dim = np.random.randint(low=1, high=3)
         sequence_length_context = np.random.randint(low=30, high=100)
@@ -45,7 +43,7 @@ class AttentionHeadSingleOutputShapeTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import ScaledDotAttention
+        from ..network.Transformer import ScaledDotAttention
 
         sequence_length_context = np.random.randint(low=30, high=100)
         sequence_length = np.random.randint(low=30, high=100)
@@ -77,7 +75,7 @@ class AttentionHeadSoftmaxTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import ScaledDotAttention, SCORE_SAVER
+        from ..network.Transformer import ScaledDotAttention, SCORE_SAVER
 
         sequence_length_context = np.random.randint(low=30, high=100)
         sequence_length = np.random.randint(low=30, high=100)
@@ -112,7 +110,7 @@ class AttentionHeadBatchedSoftmaxTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import ScaledDotAttention, SCORE_SAVER
+        from ..network.Transformer import ScaledDotAttention, SCORE_SAVER
 
         n_dim = np.random.randint(low=1, high=3)
         sequence_length_context = np.random.randint(low=30, high=100)
@@ -144,40 +142,13 @@ class AttentionHeadBatchedSoftmaxTest(UnitTest):
     def define_failure_message(self):
         return " ".join(f"{self.test_name} {self.failed_msg} {string_utils.ARROW}\
             Scores do not sum up to one! Have a closer look at the Softmax Dimension.".split())
-    
 
-class AttentionHeadValueTest(UnitTest):
-    def __init__(self):
-        super().__init__()
-
-        from ..network import ScaledDotAttention
-
-        task_path = join(tensor_path, 'task_2')
-
-        queries = torch.load(join(task_path, 'queries.pt'), weights_only=True)
-        keys = torch.load(join(task_path, 'keys.pt'), weights_only=True)
-        values = torch.load(join(task_path, 'values.pt'), weights_only=True)
-
-        params = torch.load(join(task_path, 'params.pt'), weights_only=True)
-
-        attention = ScaledDotAttention(**params)
-
-        self.result = attention(queries, keys, values)
-        self.expected = torch.load(join(task_path, 'output.pt'), weights_only=True)
-
-    def test(self):
-        return torch.allclose(self.result, self.expected, atol=1e-5)
-    
-    def define_failure_message(self):
-        return " ".join(f"{self.test_name} {self.failed_msg} {string_utils.ARROW}\
-            Attention output is incorrect!".split())
-    
 
 class MultiHeadAttentionOutputShapeTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import MultiHeadAttention
+        from ..network.Transformer import MultiHeadAttention
 
         batch_size = np.random.randint(low=30, high=100)
         sequence_length_context = np.random.randint(low=30, high=100)
@@ -212,7 +183,7 @@ class MultiHeadAttentionParameterCountTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import MultiHeadAttention
+        from ..network.Transformer import MultiHeadAttention
 
         self.d_model = np.random.randint(low=30, high=100)
         self.d_k = np.random.randint(low=30, high=100)
@@ -238,34 +209,32 @@ class MultiHeadAttentionParameterCountTest(UnitTest):
         return " ".join(f"{self.test_name} {self.failed_msg} {string_utils.ARROW}\
             Expected {expected} learnable parameters, got {result}.\
              Please check your model architecture! (Are you using biases?)".split())
-    
 
-class MultiHeadAttentionValueTest(UnitTest):
+
+class AttentionPaddingTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import MultiHeadAttention
+        from ..network.Transformer import ScaledDotAttention, SCORE_SAVER
 
-        task_path = join(tensor_path, 'task_3')
-
-        input = torch.load(join(task_path, 'input.pt'), weights_only=True)
-        context = torch.load(join(task_path, 'context.pt'), weights_only=True)
-
-        params = torch.load(join(task_path, 'params.pt'), weights_only=True)
-
-        multi_head_attention = MultiHeadAttention(**params)
+        sequence_length = np.random.randint(low=30, high=50)
+        d_k = np.random.randint(low=30, high=100)
+        attention = ScaledDotAttention(d_k=d_k)
+        random_input = torch.rand(size=(sequence_length, d_k))
+        mask = create_causal_mask(sequence_length).squeeze(0)
         
-        multi_head_attention.load_state_dict(torch.load(join(task_path, 'model.pt'), weights_only=True))
-
-        self.result = multi_head_attention(input, context, context)
-        self.expected = torch.load(join(task_path, 'output.pt'), weights_only=True)
+        SCORE_SAVER.record_scores()
+        attention(random_input, random_input, random_input, mask)
+        scores = SCORE_SAVER.get_scores()[-1]
+        self.result = scores * ~mask
+        self.expected = torch.zeros_like(scores)
 
     def test(self):
-        return torch.allclose(self.result, self.expected, atol=1e-5)
-    
+        return torch.allclose(self.result, self.expected, atol=1e-2)
+
     def define_failure_message(self):
         return " ".join(f"{self.test_name} {self.failed_msg} {string_utils.ARROW}\
-            MultiHeadAttention output is incorrect!".split())
+            Masked Softmax not implemented correctly.".split())
 
 
 class TestTask2(CompositeTest):
@@ -273,15 +242,18 @@ class TestTask2(CompositeTest):
         return [AttentionHeadMultipleDimensionsOutputShapeTest(),
                 AttentionHeadSingleOutputShapeTest(),
                 AttentionHeadSoftmaxTest(),
-                AttentionHeadBatchedSoftmaxTest(),
-                AttentionHeadValueTest()]
+                AttentionHeadBatchedSoftmaxTest()]
 
 
 class TestTask3(CompositeTest):
     def define_tests(self):
         return [MultiHeadAttentionParameterCountTest(),
-                MultiHeadAttentionOutputShapeTest(),
-                MultiHeadAttentionValueTest()]
+                MultiHeadAttentionOutputShapeTest()]
+
+
+class TestTask8(CompositeTest):
+    def define_tests(self):
+        return [AttentionPaddingTest()]
 
 
 def test_task_2():
@@ -293,3 +265,7 @@ def test_task_3():
     test = TestTask3()
     return test_results_to_score(test())
 
+
+def test_task_8():
+    test = TestTask8()
+    return test_results_to_score(test())

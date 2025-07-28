@@ -31,11 +31,11 @@ def submit_exercise(
     jupyter notebooks
     """
     # Notebook filenames
-    notebooks_filenames = sorted([x for x in os.listdir(data_path)
-                           if x.endswith('.ipynb')])
+    notebooks_filenames = [x for x in os.listdir(data_path)
+                           if x.endswith('.ipynb')]
     # Existing relevant folders
-    relevant_folders = sorted([x for x in os.listdir(data_path)
-                        if x in relevant_folders])
+    relevant_folders = [x for x in os.listdir(data_path)
+                        if x in relevant_folders]
     print('relevant folders: {}\nnotebooks files: {}'.format(
         relevant_folders, notebooks_filenames))
 

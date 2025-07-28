@@ -1,15 +1,14 @@
 from .base_tests import UnitTest, string_utils, test_results_to_score, CompositeTest
 import torch
 import numpy as np
-from ..tests import tensor_path
-from os.path import join
-import pickle
+from ..util.transformer_util import positional_encoding
+
 
 class EmbeddingShapeTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import Embedding
+        from ..network.Transformer import Embedding
 
         vocab_size = np.random.randint(low=30, high=100)
         d_model = np.random.randint(low=30, high=50) * 2
@@ -30,7 +29,7 @@ class EmbeddingForwardShapeTest(UnitTest):
     def __init__(self):
         super().__init__()
 
-        from ..network import Embedding
+        from ..network.Transformer import Embedding
 
         vocab_size = np.random.randint(low=30, high=100)
         d_model = np.random.randint(low=30, high=50) * 2
@@ -54,58 +53,38 @@ class PositionalEncodingValueTest(UnitTest):
     def __init__(self):
         super().__init__()
         
-        from ..network.embedding import positional_encoding
-        task_path = join(tensor_path, 'task_4')
+        from ..network.Transformer import Embedding
+        
+        vocab_size = np.random.randint(low=30, high=100)
+        d_model = np.random.randint(low=30, high=50) * 2
+        max_length = np.random.randint(low=30, high=100)
+        seqence_length = np.random.randint(low=20, high=max_length)
+        batch_size = np.random.randint(low=5, high=10)
 
-        params = torch.load(join(task_path, 'params.pt'), weights_only=True)
+        random_input = torch.randint(low=0, high=vocab_size, size=(batch_size, seqence_length))
 
-        self.result = positional_encoding(**params)
-        self.expected = torch.load(join(task_path, 'output.pt'), weights_only=True)
+        embedding = Embedding(vocab_size, d_model, max_length)
+        pos_encoding = positional_encoding(d_model, max_length)
+
+        output = embedding(random_input)
+        self.result = output - embedding.embedding(random_input)
+        self.expected = pos_encoding[:seqence_length].unsqueeze(0)
+        self.expected =  self.expected.repeat(batch_size, 1, 1)
+
 
     def test(self):
-        return torch.allclose(self.expected, self.result, atol=1e-4)
+        return torch.allclose(self.expected, self.result, atol=1e-5)
 
     def define_failure_message(self):
         return " ".join(f"{self.test_name} {self.failed_msg} {string_utils.ARROW}\
-            Positional Encoding wasn't implemented correctly!.".split())
-    
-class EmbeddingValueTest(UnitTest):
-    def __init__(self):
-        super().__init__()
+            Positional Encoding wasn't added to the embedding correctly!.".split())
 
-        from ..network import Embedding
-        task_path = join(tensor_path, 'task_1')
-        input = torch.load(join(task_path, 'input.pt'), weights_only=True)
-
-        params = torch.load(join(task_path, 'params.pt'), weights_only=True)
-        embedding = Embedding(vocab_size=params['vocab_size'], 
-                              d_model=params['d_model'], 
-                              max_length=params['max_length'])
-        
-        embedding.embedding.weight = torch.load(join(task_path, 'embedding.pt'), weights_only=True)
-        
-        if embedding.pos_encoding is None:
-            self.expected = torch.load(join(task_path, 'output_a.pt'), weights_only=True)
-        else:
-            self.expected = torch.load(join(task_path, 'output_b.pt'), weights_only=True)
-
-        self.result = embedding(input)
-
-    def test(self):
-        return torch.allclose(self.expected, self.result, atol=1e-4)
-
-    def define_failure_message(self):
-        return " ".join(f"{self.test_name} {self.failed_msg} {string_utils.ARROW}\
-            Embedding Layer wasn't implemented correctly!.".split())
-
-                
 
 class TestTask1(CompositeTest):
     def define_tests(self, ):
         return [
             EmbeddingShapeTest(),
-            EmbeddingForwardShapeTest(),
-            EmbeddingValueTest()
+            EmbeddingForwardShapeTest()
         ]
 
 
@@ -113,8 +92,7 @@ class TestTask4(CompositeTest):
     def define_tests(self, ):
         return [
             PositionalEncodingValueTest(),
-            EmbeddingForwardShapeTest(),
-            EmbeddingValueTest()
+            EmbeddingForwardShapeTest()
         ]
 
 

@@ -113,26 +113,21 @@ def plot_positional_encoding(positional_encoding, positional_encoding_2=None, po
 
 
 
-def plot_embeddings(labels, coordinates, integer=False):
-    plt.figure(figsize=(20, 4 if coordinates.shape[0] == 1 else 10))
-    
-    if coordinates.shape[0] == 1:  # Handle 1D embeddings
-        # Extend to 2D for compatibility with scatter plot
-        coordinates = np.vstack([coordinates, np.zeros_like(coordinates)])
+def plot_embeddings(labels, coordinates):
+    if coordinates.shape[0] == 1:
+        plt.figure(figsize=(20, 4))
+        n = np.zeros_like(coordinates)
+        coordinates = np.vstack([coordinates, n])
         plt.ylim(-0.1, 0.1)
         plt.xlabel('Embedding Dim 1')
         plt.title('1D Embeddings')
-        
-        if integer:  # Set x-axis to show only integers
-            x_ticks = np.arange(int(coordinates[0].min()), int(coordinates[0].max()) + 1)
-            plt.xticks(x_ticks)
-    else:  # Handle 2D embeddings
+    else:
+        plt.figure(figsize=(20, 10))
         plt.xlabel('Embedding Dim 1')
         plt.ylabel('Embedding Dim 2')
         plt.title('2D Embeddings')
-
-    # Scatter plot and label annotations
     plt.scatter(coordinates[0], coordinates[1], marker='o', color='blue')
+
     for i, label in enumerate(labels):
         plt.text(
             coordinates[0, i], coordinates[1, i] + 0.01, f' {label}',
@@ -273,12 +268,3 @@ def count_parameters(m):
 
 def visualize_scores(score_records, hparams):
     pass
-
-def get_key(x):
-    return x
-
-def get_query(x):
-    return x
-
-def get_value(x):
-    return x
